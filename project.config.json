@@ -1,0 +1,19 @@
+{
+    "TEST_DATA_TXN_PATH": "/cypress/fixtures/cwfmData/txn",
+    "TEST_TXN_DATA_FILE_NAME": "OCM_UM_E2E_DATA_v1.0.xlsx",
+    "REF_DATA_PATH": "/cypress/fixtures/cwfmData/ref",
+    "SERVICE_ACCOUNT": "no",
+    "LOGIN_USER_DETAILS_JSONFILEPATH": "/Users/asinh105/login.json",
+    "RUN_TIME_DATA_PATH": "/src/um-e2e-tests/testdata/runtimedata",
+    "TEST_DATA_AUTHS_FACILITY_VALIDATION": "/src/um-e2e-tests/testdata/cwfm/authsOrFacilityValidation/",
+    "FACILITY_VALIDATION_DATA_FILE": "FacilityValidationData.xlsx",
+    "AUTHS_DATA_FILE": "AuthsCreationData.xlsx",
+    "FACILITY_VALIDATION_SHEET": "HSCInputs",
+    "AUTHS_SHEET": "HSCInputs",
+    "DEFAULT_WAIT_TIME": 160000,
+    "PAGE_LOAD_TIMEOUT": 160000,
+    "ELEMENT_WAIT_FOR_ACTION": 150000,
+    "CASE_CREATION_MAX_TIMEOUT_IN_SECONDS": 120,
+    "DB_CREDENTIALS_FILE_PATH": "/Users/sracha/suresh/dbcredentials.json",
+    "ON_FAILURE_SCREENSHOT": false
+}
