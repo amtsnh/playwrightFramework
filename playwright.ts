@@ -1,13 +1,12 @@
-import { playwright, Locator, Page, Browser } from 'playwright';
+import { playwright, Locator, Page, Browser, APIRequestContext, Chromium, firefox, webkit } from 'playwright';
 import logger from './logger';
 import { cssPath, xPath } from "playwright-dompath";
 
-/**
- * Abstract class representing common UI actions.
- */
+
 abstract class UiActions {
+    
     protected locator: string;
-    protected page: playwright.Page;
+    protected page: Page;
     protected objectDescriptor: string;
     protected isPopupExist: boolean;
     protected pageIndex: number;
@@ -16,25 +15,15 @@ abstract class UiActions {
     protected tempLocator: Locator;
     protected tempLocators: Locator[];
 
-    /**
-     * Constructs a new UiActions instance.
-     * @param locator The locator string for the UI element.
-     * @param options Additional options such as description, popup existence, and page index.
-     */
+    
     constructor(locator: string, options?: { description?: string, isPopup?: boolean, pageIndex?: number }) {
         this.locator = locator;
         this.fullCss = this.locator;
-        // If isPopup is provided in options, assign its value; otherwise, default to false.
-        this.isPopupExist = options?.isPopup ?? false;
-        // If pageIndex is provided in options, assign its value; otherwise, default to 0.
-        this.pageIndex = options?.pageIndex ?? 0;
-        // If description is provided in options, assign its value; otherwise, default to 'object - '.
-        this.objectDescriptor = options?.description ?? 'object - ';
+        this.isPopupExist = options?.isPopup?.valueOf() !== undefined ? options?.isPopup?.valueOf() : false;
+        this.pageIndex = options?.pageIndex?.valueOf() !== undefined ? options?.pageIndex?.valueOf() : 0;
+        this.objectDescriptor = options?.description?.valueOf() !== undefined ? options?.description?.valueOf() : 'Object - ';
     }
 
-    /**
-     * Retrieves the page based on popup existence and pageIndex.
-     */
     protected async getPage() {
         if (this.isPopupExist === true) {
             if (playwright.popup === undefined) {
@@ -51,28 +40,19 @@ abstract class UiActions {
         }
     }
 
-    /**
-     * Switches to a different page.
-     * @param pageIndex The index of the page to switch to.
-     */
     async switchPage(pageIndex: number) {
         this.pageIndex = pageIndex;
         return this;
     }
 
-   
     async setLocator(locator: string, options?: { description?: string }) {
-        // Set the locator and optionally the object descriptor.
         this.locator = locator;
-        if (options?.description !== undefined) {
-            this.objectDescriptor = options.description;
-        }
+        if (options?.description.valueOf() !== undefined) this.objectDescriptor = options?.description;
         return this;
     }
     
     async clickToOpenPopup(options?: { force?: boolean }) {
-        // Clicks to open a popup with an optional force parameter.
-        let _force = options?.force ?? false;
+        let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const [newPopup] = await Promise.all([
             playwright.page.waitForEvent('popup'),
             playwright.page.locator(await this.getLocator()).click({ force: _force })
@@ -81,153 +61,167 @@ abstract class UiActions {
     }
     
     protected async getElements(options?: { index?: number }) {
-        // Retrieves elements based on the locator, optionally by index.
         return await this.waitTillElementToBeReady().then(async () => {
-            if (options?.index === undefined) {
+            if (options?.index.valueOf() === undefined) {
                 let ele = this.page.locator(await this.getLocator());
                 return ele;
             }
             let ele = this.page.locator(await this.getLocator()).all();
-            return ele[options.index];
+            return ele[options?.index];
         });
     }
     
     protected async getElement() {
-        // Retrieves a single element based on the locator.
         return await this.waitTillElementToBeReady().then(async () => {
             return this.page.locator(await this.getLocator());
+        
         });
     }
     
     protected async setCssAndXpath(element: Locator) {
-        // Sets full CSS and XPath for the given element.
-        this.fullCss = (await cssPath(element)).toString();
-        this.fullXpath = (await xPath(element)).toString();
+        this.fullCss = await (await cssPath(element)).toString();
+        this.fullXpath = await (await xPath(element)).toString();
     }
     
     async clickLink(linkName: string, options?: { linkNameExactMatch?: boolean, force?: boolean }) {
-        // Clicks on a link with the given name, optionally with exact match and force parameters.
-        let _linkNameExactMatch = options?.linkNameExactMatch ?? true;
-        let _force = options?.force ?? false;
+        let _linkNameExactMatch = options?.linkNameExactMatch?.valueOf() !== undefined ? options?.linkNameExactMatch : true;
+        let _force = options?.force?.valueOf() !== undefiend ? options?.force : false;
         await this.WaitTillElementToBeReady().then(async () => {
             if (linkName) {
                 await this.page.getByRole('link', {
-                    name: `${linkName}`,
-                    exact: _linkNameExactMatch
+                    name: `${linkName}`, exact: _linkNameExactMatch
                 }).waitFor();
                 await this.page.getByRole('link', {
-                    name: `${linkName}`,
-                    exact: _linkNameExactMatch
+                    name: `${linkName}`, exact: _linkNameExactMatch
                 }).click({ force: _force });
                 await this.clearFullCssAndXpath();
+                
                 await logger.info(`Clicked on the link with name - ${linkName} with exact match - ${_linkNameExactMatch} on ${this.objectDescriptor}`);
             }
         });
+    
     }
     
+    
     async clickLastLink(options?: { force?: boolean }) {
-        // Clicks on the last link found with an optional force parameter.
-        let _force = options?.force ?? false;
-        await logger.info(`Clicked on the first link - ${this.objectDescriptor}`);
-        await (await this.getElement()).first().click({ force: _force });
+        let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
+        await logger.info(`Clicked on the last link - ${this.objectDescriptor}`);
+        await (await this.getElement()).last().click({ force: _force });
         await this.clearFullCssAndXpath();
     }
 
+    async clickFirstLink(options?: { force?: boolean }) {
+        let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
+        await logger.info(`Clicked on the first link - ${this.objectDescriptor}`);
+        await (await this.getElement()).first().click({ force: _force });
+        await this.clearFullCssAndXpath();
+
+
+        
+    }
+
     async getSibling(locator: string, nthElement = 0) {
-        // Retrieves a sibling element based on the given locator and nth element.
         let ele = await (await this.getElement()).locator('xpath=..').locator(locator).nth(nthElement);
+        await this.setCssAndXpath(ele);
+        return this;
+    }
+
+    async getNextSibling(tagName : string) {
+        let ele = (await this.getElement());
+        await this.setCssAndXpath(ele);
+        ele = this.page.locator(this.fullCss + "+" + tagName);
         await this.setCssAndXpath(ele);
         return this;
     }
     
     async getParent() {
-        // Retrieves the parent element.
-        let ele = (await this.getElement()).nth(index);
+        let ele = (await this.getElement()).locator('..');
         await this.setCssAndXPath(ele);
         return this;
     }
     
     async getNth(index: number) {
-        // Retrieves the nth element.
         let ele = await (await this.getElement()).nth(index);
         await this.setCssAndXPath(ele);
         return this;
     }
     
     async getCount() {
-        // Retrieves the count of elements.
-        let length = await (await this.getElement()).count();
+        let length = Number(await (await this.getElement()).count());
         await this.clearFullCssAndXpath();
         return length;
     }
     
     async getPageObject(index: number) {
-        // Focuses on the nth element and returns it.
+
         await (await this.getElement()).nth(index).focus();
         return (await this.getElement()).nth(index);
+        
     }
     
     async getObject(index: number) {
-        // Focuses on the nth element, sets CSS and XPath, and returns the object.
         await (await this.getElement()).nth(index).focus();
         let ele = (await this.getElement()).nth(index);
         await this.setCssAndXpath(ele);
         return this;
+        
     }
     
-    async getPropertyValue(property: string, options?: { index?: number }) {
-        // Retrieves the value of the specified property for the element.
-        let _index = options?.index ?? 0;
+    async getPropertyValue(property: string, options?: { index: number }) {
+        let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
         await (await this.getElement()).focus();
-        let prpVal = await (await this.getElement()).nth(_index).getAttribute(property);
+        let prpVal = await ((await this.getElement()).nth(_index).getAttribute(property));
         await this.clearFullCssAndXpath();
         return prpVal === null ? '' : prpVal;
+        
     }
     
     async contains(containsText: string, options?: { index?: number, locator?: string }) {
-        // Checks if the element contains the specified text.
-        let _index = options?.index ?? 0;
+        let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
         let ele = await (await this.getElement()).filter({ hasText: `${containsText}` }).nth(_index);
         await this.setCssAndXpath(ele);
         return this;
+        
     }
+
     
     async hasText(containsText: string, exactMatch = false, options?: { index?: number }) {
-        // Checks if the element has the specified text.
-        let _index = options?.index ?? 0;
+        let _index = options?.index?.valueOf() !== undefiend ? options?.index : 0;
+        
         let ele = (await this.getElement()).getByText(`${containsText}`, { exact: exactMatch }).nth(_index);
         await this.setCssAndXpath(ele);
         return this;
+        
     }
     
     protected async clearFullCssAndXPath() {
-        // Clears full CSS and XPath.
         this.fullCss = this.locator.toString();
         this.fullXpath = ''.toString();
         return this;
     }
     
     async containsClick(containsText: string, options?: { force?: boolean, index?: number }) {
-        // Clicks on the element containing the specified text.
-        let _force = options?.force ?? false;
-        let _index = options?.index ?? 0;
+        let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
+        let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
+        
         await (await this.getElement()).filter({ hasText: `${containsText}` }).nth(_index).click({ force: _force });
         await staticWait(100); // Adding a static wait for 100 milliseconds
         await logger.info(`Clicked on the ${this.objectDescriptor} containing the text [${containsText}]`);
         await this.clearFullCssAndXPath();
+        
     }
     
     async waitTillElementToBeReady() {
         // Waits until the element is ready.
         await this.getPage();
-        await this.page.waitForTimeout(10);
+        await this.page.waitForTimeout(100);
         await this.page.waitForLoadState();
         await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForLoadState('networkidle');
+
+    
     }
     
     async getText(index = -1) {
-        // Retrieves the text of the element.
         let _index = index === -1 ? 0 : index;
         let text = await (await this.getElement()).nth(_index).innerText();
         await this.clearFullCssAndXPath();
@@ -236,12 +230,10 @@ abstract class UiActions {
     }
     
     async getCurrentObject() {
-        // Returns the current object.
         return this;
     }
     
     async getPageTitle() {
-        // Retrieves the page title.
         await this.getPage();
         let title = this.page.title().toString();
         await this.clearFullCssAndXPath();
@@ -249,40 +241,42 @@ abstract class UiActions {
     }
     
     async isExist() {
-        // Checks if the element exists.
         await this.getPage();
+        await this.page.waitForTimeOut(10);
         await this.page.waitForLoadState();
         await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForLoadState('networkidle');
+        // await this.page.waitForLoadState('networkidle');
+        let flag = await (await this.page.locator(await this.getLocator()).all()).length > 0 ? true : false;
         await this.clearFullCssAndXPath();
-        let flag = await this.page.$(await this.getLocator()) != null;
         return flag;
     }
     
     async isEnabled() {
-        // Checks if the element is enabled.
         let enabled = (await this.getElement()).isEnabled();
         await this.clearFullCssAndXPath();
         return enabled;
     }
+
+    async isChecked() {
+        let checked = (await this.getElement()).isChecked();
+        await this.clearFullCssAndXPath();
+        return checked;
+    }
     
     async isVisible() {
-        // Checks if the element is visible.
         let visible = (await this.getElement()).isVisible();
         await this.clearFullCssAndXPath();
         return visible;
     }
     
     async scrollIntoView(options: string = 'End') {
-        // Scrolls the page to the element.
         await this.waitTillElementToBeReady();
         await this.page.keyboard.down(options);
     }
     
     async childHasText(text: string, options?: { exactMatch?: boolean }) {
-        // Checks if the child element has the specified text.
         await this.waitTillElementToBeReady();
-        let _exactMatch = options?.exactMatch ?? false;
+        let _exactMatch = options?.exactMatch?.valueOf() !== undefiend ? options?.exactMatch : false;
         if (_exactMatch) {
             let ele = await this.page.locator(await this.getLocator(), { has: this.page.locator(`text = "${text}"`).nth(0) }).nth(0);
             await this.setCssAndXPath(ele);
@@ -292,13 +286,13 @@ abstract class UiActions {
             await this.setCssAndXPath(ele);
             return this;
         }
+        
     }
-
     async getCss(cssValue: string) {
-        // Retrieves the value of the specified CSS property.
         return await this.getPage().then(async () => {
             let locatorE = (await this.getElement());
-            let jsonVal = await locatorE.evaluate((element: any) => {
+            let jsonVals = await locatorE.evaluate((element: any) => {
+                console.log("getting css.......");
                 let json = JSON.parse('{}');
                 let cssObj = window.getComputedStyle(element);
                 for (var i = 0; i < cssObj.length; i++) {
@@ -307,26 +301,24 @@ abstract class UiActions {
                 return json;
             });
             await this.clearFullCssAndXPath();
-            if (jsonVal[cssValue] !== '') {
-                return jsonVal[cssValue];
-            } else {
+            if (jsonVals[cssValue] !== '') {
+                return jsonVals[cssValue];
+            } 
+            else {
                 return 'Invalid property';
             }
         });
     }
     
     protected async getLocator() {
-        // Retrieves the locator based on whether full CSS is set or not.
         return this.fullCss === this.locator ? this.locator : this.fullCss;
     }
     
     async getLocatorFullCss() {
-        // Retrieves the full CSS locator.
         return this.fullCss;
     }
     
     async getLocatorFullXPath() {
-        // Retrieves the full XPath locator.
         return this.fullXPath;
     }
     
