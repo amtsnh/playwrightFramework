@@ -1,5 +1,6 @@
-import { playwright, Locator } from 'playwright';
+import { playwright, Locator, Page, Browser } from 'playwright';
 import logger from './logger';
+import { cssPath, xPath } from "playwright-dompath";
 
 /**
  * Abstract class representing common UI actions.
