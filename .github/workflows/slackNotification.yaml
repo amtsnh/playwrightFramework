@@ -1,13 +1,12 @@
-name: Track Repo Actions and Notify Slack
+name: PR Events Notification to Slack
 
 on:
-  push:
-    branches:
-      - main  # Adjust the branch filter as needed
   pull_request:
-    types: [opened, closed, synchronize, reopened]  # Adjust event types as needed
-  issue_comment:
-    types: [created, edited, deleted]
+    types: [opened, closed, synchronize]  # Listen to PR open, close, and sync events
+  pull_request_review:
+    types: [submitted]  # Listen for PR reviews (approved or changes requested)
+  status:
+    types: [completed]  # Listen for status check completion (pass or fail)
 
 jobs:
   notify-slack:
@@ -23,22 +22,33 @@ jobs:
         payload: |
           {
             "channel": "#github",
-            "text": "*Action in Repo*",
+            "text": "*Pull Request Action Detected*",
             "blocks": [
               {
                 "type": "section",
                 "block_id": "section-1",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*Repository Action Detected*\n\n*Event:* ${{ github.event_name }}\n*Action by:* ${{ github.actor }}\n*Branch:* ${{ github.ref }}\n*Commit:* ${{ github.sha }}\n*Action Details:* ${{ github.event.head_commit.message }}"
-                },
-                "accessory": {
-                  "type": "image",
-                  "image_url": "https://www.example.com/logo.png",
-                  "alt_text": "repo-logo"
+                  "text": "*PR Title:* <${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}>\n*Event:* ${{ github.event_name }}\n*PR Status:* ${{ github.event.pull_request.state }}\n*PR Author:* ${{ github.event.pull_request.user.login }}"
+                }
+              },
+              {
+                "type": "section",
+                "block_id": "review-section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Review Action:* ${{ github.event.review.state }}\n*Reviewer:* ${{ github.actor }}"
+                }
+              },
+              {
+                "type": "section",
+                "block_id": "check-status",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Check Status:* ${{ github.event.status.state }}\n*Check Name:* ${{ github.event.status.context }}"
                 }
               }
             ]
           }
       env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # The webhook URL stored as a GitHub secret
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  
