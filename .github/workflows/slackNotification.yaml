@@ -22,7 +22,7 @@ jobs:
       with:
         payload: |
           {
-            "channel": "#github",  # Specify the Slack channel here
+            "channel": "#github",
             "text": "*Action in Repo*",
             "blocks": [
               {
