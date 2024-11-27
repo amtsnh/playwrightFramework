@@ -40,5 +40,5 @@ jobs:
           
           # Send a message to Slack
           curl -X POST -H 'Content-type: application/json' \
-            --data '{"text": "'"$MESSAGE"'", "channel": "#pr-hub"}' \
+            --data '{"text": "'"$MESSAGE"'", "channel": "#github"}' \
             ${{ secrets.SLACK_WEBHOOK_URL }}
