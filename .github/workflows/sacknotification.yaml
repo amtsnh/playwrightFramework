@@ -1,0 +1,44 @@
+name: PR Notifications to Slack
+
+on:
+  pull_request:
+    types:
+      - opened
+      - closed
+      - labeled
+      - ready_for_review
+      - review_requested
+      - review_request_removed
+      - synchronize
+
+jobs:
+  pr_notifications:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get PR details
+        id: pr_details
+        run: |
+          PR_AUTHOR=$(curl -H "Authorization: token ${{secrets.SLACK_WEBHOOK_URL}}" \
+            "https://api.github.com/repos/${{github.repository}}/pulls/${{github.event.pull_request.number}}" | \
+            jq -r .user.login)
+          echo "PR_AUTHOR=$PR_AUTHOR" >> $GITHUB_ENV
+
+      - name: Send Slack notification
+        if: ${{ github.event.action == 'review_requested' || github.event.action == 'approved' || github.event.action == 'request_changes' }}
+        run: |
+          if [[ "${{ github.event.action }}" == "approved" ]]; then
+            MESSAGE="Your PR has been approved! 🎉"
+          elif [[ "${{ github.event.action }}" == "request_changes" ]]; then
+            MESSAGE="Changes requested on your PR. Please address the feedback. 🔴"
+          elif [[ "${{ github.event.action }}" == "review_requested" ]]; then
+            MESSAGE="You have a new review request for your PR! 📝"
+          fi
+          
+          # Send a message to Slack
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text": "'"$MESSAGE"'", "channel": "#pr-hub"}' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
