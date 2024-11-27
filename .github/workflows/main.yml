@@ -22,7 +22,7 @@ jobs:
       - name: Get PR details
         id: pr_details
         run: |
-          PR_AUTHOR=$(curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" \
+          PR_AUTHOR=$(curl -H "Authorization: token ${{secrets.SLACK_WEBHOOK_URL}}" \
             "https://api.github.com/repos/${{github.repository}}/pulls/${{github.event.pull_request.number}}" | \
             jq -r .user.login)
           echo "PR_AUTHOR=$PR_AUTHOR" >> $GITHUB_ENV
